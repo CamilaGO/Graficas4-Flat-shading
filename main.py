@@ -20,7 +20,8 @@ r = Render(1200, 1200)
 ##bitmap.glClearColor(0, 0, 0) #background color
 #bitmap.glClear()
 #bitmap.glColor(1, 1, 1) #estos colores son los que se usaran en Vertex
-r.load('./face.obj', (600, 600, 0), (10, 10, 10))
+r.load('./face.obj', (600, 500, 0), (20, 20, 20))
 
 
-r.finish('modelo.bmp')
+r.finish('cara.bmp')
+r.glZBuffer('zbuffer.bmp')

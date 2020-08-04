@@ -69,7 +69,7 @@ def barycentric(A, B, C, P):
 
   u = cx/cz
   v = cy/cz
-  w = 1 - (u + v)
+  w = 1 - (cx + cy)/cz
 
   return w, v, u
 
@@ -101,14 +101,15 @@ class Render(object):
     self.height = height
     self.current_color = WHITE
     self.glClear()
-    self.zbuffer = [
-      [-9999999999 for x in range(self.width)] 
-      for y in range(self.height)
-    ] #array del tamaño del buffer lleno de -infinitos
+     #array del tamaño del buffer lleno de -infinitos
 
   def glClear(self):
     self.buffer = [
       [BLACK for x in range(self.width)] 
+      for y in range(self.height)
+    ]
+    self.zbuffer = [
+      [-float('inf') for x in range(self.width)] 
       for y in range(self.height)
     ]
 
@@ -205,17 +206,12 @@ class Render(object):
           continue
           #se calcula la profunidad en z de cada punto
         z = A.z * w + B.z * v + C.z * u
-        if z > self.zbuffer[x][y]:
-          self.point(x, y)
-          self.zbuffer[x][y] = z
-
-  def transform(self, vertex, translate=(0, 0, 0), scale=(1, 1, 1)):
-    # returns a vertex 3, translated and transformed
-    return V3(
-      round((vertex[0] + translate[0]) * scale[0]),
-      round((vertex[1] + translate[1]) * scale[1]),
-      round((vertex[2] + translate[2]) * scale[2])
-    )
+        try:
+          if z > self.zbuffer[x][y]:
+            self.point(x,y)
+            self.zbuffer[x][y] = z
+        except:
+          pass
     
   def load(self, filename, translate=(0, 0, 0), scale=(1, 1, 1)):
     model = Obj(filename)
@@ -303,5 +299,47 @@ class Render(object):
 
         self.triangle(A, D, C)
 
+  def glZBuffer(self, filename):
+    archivo = open(filename, 'wb')
+    archivo.write(char('B'))
+    archivo.write(char('M'))
+    archivo.write(dword(14 + 40 + self.width * self.height * 3))
+    archivo.write(dword(0))
+    archivo.write(dword(14 + 40))
 
-    
+    # Header
+    archivo.write(dword(40))
+    archivo.write(dword(self.width))
+    archivo.write(dword(self.height))
+    archivo.write(word(1))
+    archivo.write(word(24))
+    archivo.write(dword(0))
+    archivo.write(dword(self.width * self.height * 3))
+    archivo.write(dword(0))
+    archivo.write(dword(0))
+    archivo.write(dword(0))
+    archivo.write(dword(0))
+
+    minZ = float('inf')
+    maxZ = -float('inf')
+    for x in range(self.height):
+        for y in range(self.width):
+            if self.zbuffer[x][y] != -float('inf'):
+                if self.zbuffer[x][y] < minZ:
+                    minZ = self.zbuffer[x][y]
+
+                if self.zbuffer[x][y] > maxZ:
+                    maxZ = self.zbuffer[x][y]
+
+    for x in range(self.height):
+        for y in range(self.width):
+            depth = self.zbuffer[x][y]
+            if depth == -float('inf'):
+                depth = minZ
+            depth = round((depth - minZ) / (maxZ - minZ))
+            archivo.write(color(depth,depth,depth))
+
+    archivo.close()
+
+
+  
