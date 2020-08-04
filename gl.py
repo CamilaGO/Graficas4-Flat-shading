@@ -101,10 +101,10 @@ class Render(object):
     self.height = height
     self.current_color = WHITE
     self.glClear()
-    """self.zbuffer = [
+    self.zbuffer = [
       [-9999999999 for x in range(self.width)] 
       for y in range(self.height)
-    ] #array del tamaño del buffer lleno de -infinitos"""
+    ] #array del tamaño del buffer lleno de -infinitos
 
   def glClear(self):
     self.buffer = [
@@ -204,51 +204,104 @@ class Render(object):
           #el punto esta afuera y no se dibuja
           continue
           #se calcula la profunidad en z de cada punto
-          #z = A.z * w + B.z * v + C.z * u
-          #if z > self.zbuffer[x][y]:
-        self.point(x, y)
-            #self.zbuffer[x][y] = z
+        z = A.z * w + B.z * v + C.z * u
+        if z > self.zbuffer[x][y]:
+          self.point(x, y)
+          self.zbuffer[x][y] = z
+
+  def transform(self, vertex, translate=(0, 0, 0), scale=(1, 1, 1)):
+    # returns a vertex 3, translated and transformed
+    return V3(
+      round((vertex[0] + translate[0]) * scale[0]),
+      round((vertex[1] + translate[1]) * scale[1]),
+      round((vertex[2] + translate[2]) * scale[2])
+    )
     
   def load(self, filename, translate=(0, 0, 0), scale=(1, 1, 1)):
-    # carga un archivo .obj 
     model = Obj(filename)
 
+    light = V3(0, 0, 1)
+    
     for face in model.faces:
       vcount = len(face)
-      vertices = []
 
-      for j in range(vcount):
-        f1 = face[j][0]
-        f2 = face[(j + 1) % vcount][0]
+      if vcount == 3:
+        f1 = face[0][0] - 1
+        f2 = face[1][0] - 1
+        f3 = face[2][0] - 1
 
-        v1 = model.vertices[f1 - 1]
-        v2 = model.vertices[f2 - 1]
+        v1 = V3(model.vertices[f1][0], model.vertices[f1][1], model.vertices[f1][2])
+        v2 = V3(model.vertices[f2][0], model.vertices[f2][1], model.vertices[f2][2])
+        v3 = V3(model.vertices[f3][0], model.vertices[f3][1], model.vertices[f3][2])
+
+        x1 = round((v1.x * scale[0]) + translate[0])
+        y1 = round((v1.y * scale[1]) + translate[1])
+        z1 = round((v1.z * scale[2]) + translate[2])
+
+        x2 = round((v2.x * scale[0]) + translate[0])
+        y2 = round((v2.y * scale[1]) + translate[1])
+        z2 = round((v2.z * scale[2]) + translate[2])
+
+        x3 = round((v3.x * scale[0]) + translate[0])
+        y3 = round((v3.y * scale[1]) + translate[1])
+        z3 = round((v3.z * scale[2]) + translate[2])
+
+        A = V3(x1, y1, z1)
+        B = V3(x2, y2, z2)
+        C = V3(x3, y3, z3)
+
+        normal = norm(cross(sub(B, A), sub(C, A)))
+        intensity = dot(normal, light)
+        grey = round(255 * intensity)
+        if grey < 0:
+          continue 
+
+        self.current_color = color(grey, grey, grey)
+
+        self.triangle(A, B, C)
+
+      else:
+        f1 = face[0][0] - 1
+        f2 = face[1][0] - 1
+        f3 = face[2][0] - 1
+        f4 = face[3][0] - 1   
+
+        v1 = V3(model.vertices[f1][0], model.vertices[f1][1], model.vertices[f1][2])
+        v2 = V3(model.vertices[f2][0], model.vertices[f2][1], model.vertices[f2][2])
+        v3 = V3(model.vertices[f3][0], model.vertices[f3][1], model.vertices[f3][2])
+        v4 = V3(model.vertices[f4][0], model.vertices[f4][1], model.vertices[f4][2])
+
+        x1 = round((v1.x * scale[0]) + translate[0])
+        y1 = round((v1.y * scale[1]) + translate[1])
+        z1 = round((v1.z * scale[2]) + translate[2])
+
+        x2 = round((v2.x * scale[0]) + translate[0])
+        y2 = round((v2.y * scale[1]) + translate[1])
+        z2 = round((v2.z * scale[2]) + translate[2])
+
+        x3 = round((v3.x * scale[0]) + translate[0])
+        y3 = round((v3.y * scale[1]) + translate[1])
+        z3 = round((v3.z * scale[2]) + translate[2])
+
+        x4 = round((v4.x * scale[0]) + translate[0])
+        y4 = round((v4.y * scale[1]) + translate[1])
+        z4 = round((v4.z * scale[2]) + translate[2])
+
+        A = V3(x1, y1, z1)
+        B = V3(x2, y2, z2)
+        C = V3(x3, y3, z3)
+        D = V3(x4, y4, z4)
         
-        x1 = round((v1[0] + translate[0]) * scale[0])
-        y1 = round((v1[1] + translate[1]) * scale[1])
-        x2 = round((v2[0] + translate[0]) * scale[0])
-        y2 = round((v2[1] + translate[1]) * scale[1])
+        normal = norm(cross(sub(B, A), sub(C, A)))  # no necesitamos dos normales!!
+        intensity = dot(normal, light)
+        grey = round(255 * intensity)
+        if grey < 0:
+          continue # dont paint this face
 
-        vertices.append(V2(x1, y1))
-        self.glLine(x1, y1, x2, y2)
-
-      r_color = color(
-        random.randint(0, 255),
-        random.randint(0, 255),
-        random.randint(0, 255)
-      )
-      self.set_color(r_color)
-
-      if vcount == 3:
-        A = vertices[0]
-        B = vertices[1]
-        C = vertices[2]
+        self.current_color = color(grey, grey, grey)
         self.triangle(A, B, C)
 
-      if vcount == 3:
-        A = vertices[0]
-        B = vertices[1]
-        C = vertices[2]
-        D = vertices[2]
-        self.triangle(A, B, C)
         self.triangle(A, D, C)
+
+
+    
