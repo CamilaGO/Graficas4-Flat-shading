@@ -21,5 +21,4 @@ class Obj(object):
                     self.faces.append([list(map(int , face.split('/'))) for face in value.split(' ')])
         
 
-
 #m = Obj('./JapaneseGates.obj')

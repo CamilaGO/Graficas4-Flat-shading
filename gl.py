@@ -1,7 +1,7 @@
 import struct
 import random
 import numpy
-from obj import Obj
+from obj import Obj 
 from collections import namedtuple
 
 # implementacion de "vectores" para manejar menos variables en funciones y tener mejor orden de coordenadas
@@ -205,7 +205,7 @@ class Render(object):
           #el punto esta afuera y no se dibuja
           continue
           #se calcula la profunidad en z de cada punto
-        z = A.z * w + B.z * v + C.z * u
+        z = A.z * w + B.z * u + C.z * v
         try:
           if z > self.zbuffer[x][y]:
             self.point(x,y)
@@ -295,51 +295,9 @@ class Render(object):
           continue # dont paint this face
 
         self.current_color = color(grey, grey, grey)
-        self.triangle(A, B, C)
+        self.triangle(A, B, C) 
 
         self.triangle(A, D, C)
-
-  def glZBuffer(self, filename):
-    archivo = open(filename, 'wb')
-    archivo.write(char('B'))
-    archivo.write(char('M'))
-    archivo.write(dword(14 + 40 + self.width * self.height * 3))
-    archivo.write(dword(0))
-    archivo.write(dword(14 + 40))
-
-    # Header
-    archivo.write(dword(40))
-    archivo.write(dword(self.width))
-    archivo.write(dword(self.height))
-    archivo.write(word(1))
-    archivo.write(word(24))
-    archivo.write(dword(0))
-    archivo.write(dword(self.width * self.height * 3))
-    archivo.write(dword(0))
-    archivo.write(dword(0))
-    archivo.write(dword(0))
-    archivo.write(dword(0))
-
-    minZ = float('inf')
-    maxZ = -float('inf')
-    for x in range(self.height):
-        for y in range(self.width):
-            if self.zbuffer[x][y] != -float('inf'):
-                if self.zbuffer[x][y] < minZ:
-                    minZ = self.zbuffer[x][y]
-
-                if self.zbuffer[x][y] > maxZ:
-                    maxZ = self.zbuffer[x][y]
-
-    for x in range(self.height):
-        for y in range(self.width):
-            depth = self.zbuffer[x][y]
-            if depth == -float('inf'):
-                depth = minZ
-            depth = round((depth - minZ) / (maxZ - minZ))
-            archivo.write(color(depth,depth,depth))
-
-    archivo.close()
 
 
   
