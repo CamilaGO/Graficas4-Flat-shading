@@ -194,6 +194,7 @@ class Render(object):
             y += 1 if y1 < y2 else -1
             threshold += dx * 2
 
+
   def triangle(self, A, B, C):
     xmax, ymax, xmin, ymin = bbox(A, B, C)
 
